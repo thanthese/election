@@ -24,7 +24,9 @@ def print_cvs_precinct_summary():
     print "totals:"
     candidates_cols = [4, 5, 6]
     for i in candidates_cols:
-        print "- " + str(sum([int(r[i]) for r in rows])) + ": " + headers[i]
+        name = headers[i]
+        votes = sum([int(row[i]) for row in rows])
+        print "- " + str(votes) + ": " + name
 
 
 def print_rss_summary():
