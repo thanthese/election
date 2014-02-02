@@ -2,6 +2,7 @@ import csv
 import urllib2
 import feedparser
 import bs4
+import requests
 
 resultsUrls = {
     "csvPrecinct": "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByPrecinct_47474.csv",
@@ -52,3 +53,9 @@ def print_rss_summary():
 print_cvs_precinct_summary()
 print
 print_rss_summary()
+
+print
+print "### requests test ###"
+payload = {'key1': 'value1', 'key2': 'the nature of things'}
+r = requests.post("http://httpbin.org/post", data=payload)
+print r.json()
