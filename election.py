@@ -1,8 +1,11 @@
 import csv
 import urllib2
+
 import feedparser
 import bs4
-import requests
+
+
+geoserverUrl = "http://localhost:8080/geoserver/ows"
 
 resultsUrls = {
     "csvPrecinct": "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByPrecinct_47474.csv",
@@ -19,15 +22,40 @@ def print_cvs_precinct_summary():
     headers = cvs_iter.next()
     rows = list(cvs_iter)
 
-    print "### CSV Precinct Summary ###"
-    print "headers: " + str(headers)
-    print "number of precincts: " + str(len(rows))
-    print "totals:"
-    candidates_cols = [4, 5, 6]
-    for i in candidates_cols:
-        name = headers[i]
-        votes = sum([int(row[i]) for row in rows])
-        print "- " + str(votes) + ": " + name
+    #print "### CSV Precinct Summary ###"
+    #print "headers: " + str(headers)
+    #print "number of precincts: " + str(len(rows))
+    #print "totals:"
+    #candidates_cols = [4, 5, 6]
+    #for i in candidates_cols:
+    #    name = headers[i]
+    #    votes = sum([int(row[i]) for row in rows])
+    #    print "- " + str(votes) + ": " + name
+
+
+    for i in rows:
+        #print i
+        culotta = i[4]
+        mckenna = i[5]
+        rouse = i[6]
+        precinctid = strip0(i[2]) + "-" + strip0(i[3])
+
+        total = int(culotta) + int(mckenna) + int(rouse)
+        mckenna_per = -1
+        if total > 0:
+            mckenna_per = float(mckenna) / total
+        mckenna_per = 1 - mckenna_per
+        print "update \"Voting_Precinct\" set culotta={}, mckenna={}, rouse={}, mckenna_per={} where \"PRECINCTID\" = '{}';".format(
+            culotta, mckenna, rouse, mckenna_per, precinctid)
+
+
+def strip0(s):
+    if len(s) == 0:
+        return s
+    if s[0] == "0":
+        return s[1:]
+    else:
+        return s
 
 
 def print_rss_summary():
@@ -51,11 +79,11 @@ def print_rss_summary():
 
 
 print_cvs_precinct_summary()
-print
-print_rss_summary()
+#print
+#print_rss_summary()
 
-print
-print "### requests test ###"
-payload = {'key1': 'value1', 'key2': 'the nature of things'}
-r = requests.post("http://httpbin.org/post", data=payload)
-print r.json()
+#print
+#print "### requests test ###"
+#payload = {'key1': 'value1', 'key2': 'the nature of things'}
+#r = requests.post("http:#httpbin.org/post", data=payload)
+#print r.json()
