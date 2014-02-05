@@ -1,86 +1,60 @@
 import csv
 import urllib2
 
-import feedparser
-import bs4
-
-
 geoserverUrl = "http://localhost:8080/geoserver/ows"
-
-resultsUrls = {
-    "csvPrecinct": "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByPrecinct_47474.csv",
-    "csvParish": "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByParish_47474.csv",
-    "rssParish": "http://lasos.blob.core.windows.net/graphical-prod/rss/02012014_Parish.xml",
-    "rssComplete": "http://lasos.blob.core.windows.net/graphical-prod/rss/02012014_RSS.xml"
-}
+csvUrl = "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByPrecinct_47474.csv"
 
 
-def print_cvs_precinct_summary():
-    url_file = urllib2.urlopen(resultsUrls["csvPrecinct"])
+def get_csv_data(url):
+    url_file = urllib2.urlopen(url)
     cvs_iter = csv.reader(url_file)
-
     headers = cvs_iter.next()
     rows = list(cvs_iter)
-
-    #print "### CSV Precinct Summary ###"
-    #print "headers: " + str(headers)
-    #print "number of precincts: " + str(len(rows))
-    #print "totals:"
-    #candidates_cols = [4, 5, 6]
-    #for i in candidates_cols:
-    #    name = headers[i]
-    #    votes = sum([int(row[i]) for row in rows])
-    #    print "- " + str(votes) + ": " + name
+    return headers, rows
 
 
-    for i in rows:
-        #print i
-        culotta = i[4]
-        mckenna = i[5]
-        rouse = i[6]
-        precinctid = strip0(i[2]) + "-" + strip0(i[3])
+def sum_column(rows, col):
+    return sum([int(row[col]) for row in rows])
 
+
+def print_precinct_totals(headers, rows):
+    candidate_cols = [4, 5, 6]
+
+    print "### CSV Precinct Summary ###"
+    print "headers: {}".format(headers)
+
+    precincts_total = len(rows)
+    is_reporting = lambda row: any(row[col] > 0 for col in candidate_cols)
+    precincts_reporting = len(filter(is_reporting, rows))
+    print "{} of {} precincts reporting".format(precincts_reporting, precincts_total)
+
+    print "totals:"
+    total_votes = sum(sum_column(rows, col) for col in candidate_cols)
+    for col in candidate_cols:
+        name = headers[col]
+        votes = sum_column(rows, col)
+        percent = 100.0 * votes / total_votes
+        print "- {}: ({:.1f}%) {}".format(votes, percent, name)
+
+
+def print_upload_sql(rows):
+    for row in rows:
+        culotta = row[4]
+        mckenna = row[5]
+        rouse = row[6]
+        precinctid = row[2].lstrip("0") + "-" + row[3].lstrip("0")
         total = int(culotta) + int(mckenna) + int(rouse)
-        mckenna_per = -1
+        mckenna_percent = -1
         if total > 0:
-            mckenna_per = float(mckenna) / total
-        mckenna_per = 1 - mckenna_per
-        print "update \"Voting_Precinct\" set culotta={}, mckenna={}, rouse={}, mckenna_per={} where \"PRECINCTID\" = '{}';".format(
-            culotta, mckenna, rouse, mckenna_per, precinctid)
+            mckenna_percent = float(mckenna) / total
+        mckenna_percent = 1 - mckenna_percent
+        print """update "Voting_Precinct" set culotta={}, mckenna={}, rouse={}, mckenna_per={:.4f} where "PRECINCTID" = '{}';""".format(
+            culotta, mckenna, rouse, mckenna_percent, precinctid)
 
 
-def strip0(s):
-    if len(s) == 0:
-        return s
-    if s[0] == "0":
-        return s[1:]
-    else:
-        return s
-
-
-def print_rss_summary():
-    feed = feedparser.parse(resultsUrls["rssParish"])
-    coroner_item = feed.entries[2]
-
-    soup = bs4.BeautifulSoup(coroner_item.summary)
-    names_row = soup.table.find_all('tr')[0].find_all('td')
-    totals_row = soup.table.find_all('tr')[2].find_all('td')
-
-    print "### RSS Parish Summary ###"
-    print "title: " + coroner_item.title
-    for i in [1, 2, 3]:
-        votes = int(totals_row[i * 2 - 1].text)
-        percentage = totals_row[i * 2].text
-        name = names_row[i].text
-        print "- {} votes, {}, {}".format(votes, percentage, name)
-
-    print "total votes cast: {}".format(int(totals_row[7].text))
-    print totals_row[8].text
-
-
-print_cvs_precinct_summary()
-#print
-#print_rss_summary()
+headers, rows = get_csv_data(csvUrl)
+print_precinct_totals(headers, rows)
+print_upload_sql(rows)
 
 #print
 #print "### requests test ###"
