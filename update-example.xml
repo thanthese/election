@@ -1,0 +1,31 @@
+<wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" service="WFS" version="1.1.0"
+                 xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!--the update section can repeat-->
+    <wfs:Update typeName="feature:Voting_Precinct" xmlns:feature="http://opengeo.org">
+        <wfs:Property>
+            <wfs:Name>culotta</wfs:Name>
+            <wfs:Value>-100</wfs:Value>
+        </wfs:Property>
+        <wfs:Property>
+            <wfs:Name>mckenna</wfs:Name>
+            <wfs:Value>-101</wfs:Value>
+        </wfs:Property>
+        <wfs:Property>
+            <wfs:Name>rouse</wfs:Name>
+            <wfs:Value>-102</wfs:Value>
+        </wfs:Property>
+        <wfs:Property>
+            <wfs:Name>mckenna_per</wfs:Name>
+            <wfs:Value>50</wfs:Value>
+        </wfs:Property>
+        <ogc:Filter>
+            <ogc:Filter>
+                <ogc:PropertyIsEqualTo>
+                    <ogc:PropertyName>PRECINCTID</ogc:PropertyName>
+                    <ogc:Literal>17-14</ogc:Literal>
+                </ogc:PropertyIsEqualTo>
+            </ogc:Filter>
+        </ogc:Filter>
+    </wfs:Update>
+</wfs:Transaction>
