@@ -38,7 +38,7 @@ update_template = """
     """
 
 transaction_template = """
-    <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" service="WFS" version="1.1.0"
+    <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" xmlns:ogc="http://www.opengis.net/ogc" service="WFS" version="1.1.0"
                      xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd"
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         {}
