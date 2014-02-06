@@ -95,15 +95,9 @@ def build_transaction_xml(rows):
     return transaction_template.format("".join(updates))
 
 
-def post_xml(xml, endpoint):
-    r = requests.post(endpoint, data=xml)
-    return r.content
-
-
 headers, rows = get_csv_data(csvUrl)
 print_precinct_totals(headers, rows)
 xml = build_transaction_xml(rows)
 print xml
-print post_xml(xml, geoserverUrl)
-
-
+response = requests.post(geoserverUrl, data=xml)
+print response.content
