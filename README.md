@@ -14,6 +14,6 @@ The general steps are these:
 
 - Repeat often.
 
-At the end of the day we should have a real-time (ish) map of precinct results as they come in
+At the end of the day we should have a real-time (ish) map of precinct results as they come in.
 
 [geo]: http://geoserver.org/display/GEOS/Welcome
