@@ -77,21 +77,6 @@ def print_precinct_totals(headers, rows):
         print "- {}: ({:.1f}%) {}".format(votes, percent, name)
 
 
-def print_upload_sql(rows):
-    for row in rows:
-        culotta = row[4]
-        mckenna = row[5]
-        rouse = row[6]
-        precinctid = row[2].lstrip("0") + "-" + row[3].lstrip("0")
-        total = int(culotta) + int(mckenna) + int(rouse)
-        mckenna_percent = -1
-        if total > 0:
-            mckenna_percent = float(mckenna) / total
-        mckenna_percent = 1 - mckenna_percent
-        print """update "Voting_Precinct" set culotta={}, mckenna={}, rouse={}, mckenna_per={:.4f} where "PRECINCTID" = '{}';""".format(
-            culotta, mckenna, rouse, mckenna_percent, precinctid)
-
-
 def build_update_xml(row):
     culotta = row[4]
     mckenna = row[5]
@@ -116,8 +101,7 @@ def post_xml(xml, endpoint):
 
 
 headers, rows = get_csv_data(csvUrl)
-# print_precinct_totals(headers, rows)
-# print_upload_sql(rows)
+print_precinct_totals(headers, rows)
 xml = build_transaction_xml(rows)
 print xml
 print post_xml(xml, geoserverUrl)
