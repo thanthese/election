@@ -1,19 +1,21 @@
 import csv
 import urllib2
+import time
+import datetime
 
-import requests
 
+ward_index = 2
+precinct_index = 3
+mckenna_index = 4
+rouse_index = 5
+
+update_rate_seconds = 120
 
 geoserverUrl = "http://localhost:8080/geoserver/ows"
-testUrl = "http://httpbin.org/post"
-csvUrl = "http://lasos.blob.core.windows.net/graphical-prod/20140201/csv/ByPrecinct_47474.csv"
+csvUrl = "http://lasos.blob.core.windows.net/graphical-prod/20140315/csv/ByPrecinct_50208.csv"
 
 update_template = """
     <wfs:Update typeName="feature:Voting_Precinct" xmlns:feature="http://opengeo.org">
-        <wfs:Property>
-            <wfs:Name>culotta</wfs:Name>
-            <wfs:Value>{}</wfs:Value>
-        </wfs:Property>
         <wfs:Property>
             <wfs:Name>mckenna</wfs:Name>
             <wfs:Value>{}</wfs:Value>
@@ -38,7 +40,10 @@ update_template = """
     """
 
 transaction_template = """
-    <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" xmlns:ogc="http://www.opengis.net/ogc" service="WFS" version="1.1.0"
+    <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs"
+                     xmlns:ogc="http://www.opengis.net/ogc"
+                     service="WFS"
+                     version="1.1.0"
                      xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd"
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         {}
@@ -54,40 +59,41 @@ def get_csv_data(url):
 
 
 def sum_column(rows, col):
-    return sum([int(row[col]) for row in rows])
+    return sum(int(row[col]) for row in rows)
+
+
+def safe_percent(numerator, denominator):
+    if denominator == 0:
+        return 0.0
+    return 100.0 * numerator / denominator
 
 
 def print_precinct_totals(headers, rows):
-    candidate_cols = [4, 5, 6]
-
     print "### CSV Precinct Summary ###"
     print "headers: {}".format(headers)
 
     precincts_total = len(rows)
-    is_reporting = lambda row: any(row[col] > 0 for col in candidate_cols)
-    precincts_reporting = len(filter(is_reporting, rows))
-    print "{} of {} precincts reporting".format(precincts_reporting, precincts_total)
+    precincts_reporting = len([r for r in rows if int(r[mckenna_index]) > 0 or int(r[rouse_index]) > 0])
+    print "{} of {} precincts reporting ({:.1f}%)".format(precincts_reporting,
+                                                          precincts_total,
+                                                          safe_percent(precincts_reporting, precincts_total))
 
     print "totals:"
-    total_votes = sum(sum_column(rows, col) for col in candidate_cols)
-    for col in candidate_cols:
-        name = headers[col]
-        votes = sum_column(rows, col)
-        percent = 100.0 * votes / total_votes
-        print "- {}: ({:.1f}%) {}".format(votes, percent, name)
+    mckenna_votes = sum_column(rows, mckenna_index)
+    rouse_votes = sum_column(rows, rouse_index)
+    total_votes = mckenna_votes + rouse_votes
+    template = "- {}: ({:.1f}%) {}"
+    print template.format(mckenna_votes, safe_percent(mckenna_votes, total_votes), headers[mckenna_index])
+    print template.format(rouse_votes, safe_percent(rouse_votes, total_votes), headers[rouse_index])
 
 
 def build_update_xml(row):
-    culotta = row[4]
-    mckenna = row[5]
-    rouse = row[6]
-    precinctid = row[2].lstrip("0") + "-" + row[3].lstrip("0")
-    total = int(culotta) + int(mckenna) + int(rouse)
-    mckenna_percent = -1
-    if total > 0:
-        mckenna_percent = float(mckenna) / total
-    mckenna_percent = 1 - mckenna_percent
-    return update_template.format(culotta, mckenna, rouse, mckenna_percent, precinctid)
+    mckenna_votes = int(row[mckenna_index])
+    rouse_votes = int(row[rouse_index])
+    total_votes = mckenna_votes + rouse_votes
+    mckenna_percent = safe_percent(mckenna_votes, total_votes)
+    precinctid = row[ward_index].lstrip("0") + "-" + row[precinct_index].lstrip("0")
+    return update_template.format(mckenna_votes, rouse_votes, mckenna_percent, precinctid)
 
 
 def build_transaction_xml(rows):
@@ -95,9 +101,15 @@ def build_transaction_xml(rows):
     return transaction_template.format("".join(updates))
 
 
-headers, rows = get_csv_data(csvUrl)
-print_precinct_totals(headers, rows)
-xml = build_transaction_xml(rows)
-print xml
-response = requests.post(geoserverUrl, data=xml)
-print response.content
+def update():
+    headers, rows = get_csv_data(csvUrl)
+    print_precinct_totals(headers, rows)
+    xml = build_transaction_xml(rows)
+    # response = requests.post(geoserverUrl, data=xml)
+    # print response.content
+
+
+while True:
+    update()
+    print "Updates every", update_rate_seconds, "seconds. Last at", datetime.datetime.now()
+    time.sleep(120)
