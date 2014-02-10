@@ -112,4 +112,4 @@ def update():
 while True:
     update()
     print "Updates every", update_rate_seconds, "seconds. Last at", datetime.datetime.now()
-    time.sleep(120)
+    time.sleep(update_rate_seconds)
