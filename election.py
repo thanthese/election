@@ -105,8 +105,8 @@ def update():
     headers, rows = get_csv_data(csvUrl)
     print_precinct_totals(headers, rows)
     xml = build_transaction_xml(rows)
-    # response = requests.post(geoserverUrl, data=xml)
-    # print response.content
+    response = requests.post(geoserverUrl, data=xml)
+    print response.content
 
 
 while True:
